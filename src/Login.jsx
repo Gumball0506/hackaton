@@ -282,28 +282,6 @@ export default function Login({ onLogin }) {
             </button>
           </form>
 
-          {/* Demo card */}
-          <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'24px', marginBottom:'8px' }}>
-            Acceso de demostración:
-          </div>
-          <div style={{
-            display:'flex', alignItems:'center', gap:'11px',
-            background:'#fff', border:'1px solid #E5E7EB', borderRadius:'10px', padding:'11px 13px'
-          }}>
-            <div style={{
-              width:'38px', height:'38px', borderRadius:'50%', background:'#E85D04',
-              color:'#fff', fontWeight:600, fontSize:'13px',
-              display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0
-            }}>JM</div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:'13px', fontWeight:600 }}>Mg. Jorge Mendoza Quispe</div>
-              <div style={{ fontSize:'11.5px', color:'#6B7280' }}>jorge.mendoza@unfv.edu.pe</div>
-            </div>
-            <span style={{
-              fontSize:'9.5px', fontWeight:600, background:'#FFF0E8',
-              color:'#C44D00', borderRadius:'20px', padding:'4px 9px', whiteSpace:'nowrap'
-            }}>TUTOR</span>
-          </div>
         </div>
       </div>
 
