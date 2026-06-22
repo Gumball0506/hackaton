@@ -4,7 +4,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL     = 'https://obtoeouejhukiywafdhy.supabase.co'
-const SUPABASE_SERVICE = 'sb_secret_m-Vs_RSuzpBxmMSNixkMgQ_Zoabe4MA'
+const SUPABASE_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9idG9lb3Vlamh1a2l5d2FmZGh5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjE0MDc2NywiZXhwIjoyMDk3NzE2NzY3fQ.wgvajioAhW3UqscbhH6BYhEt3zNHUYYP5cGxt30EtZA'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE, {
   auth: { autoRefreshToken: false, persistSession: false }
