@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { calcKPIs } from './lib/queries'
 import { callAIRecommend } from './lib/ai'
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
+
 const PER_PAGE = 10
 
 function RingChart({ pct, color }) {
@@ -57,8 +59,7 @@ export default function Dashboard({ estudiantes, onVerEstudiante, onRefresh }) {
     let cancelled = false
     async function checkConexion() {
       try {
-        const { apiPost } = await import('./lib/apiClient')
-        await apiPost('/health', {})
+        await fetch(`${BACKEND_URL}/api/health`).then(r => { if (!r.ok) throw new Error(r.status) })
         if (!cancelled) setIaConected(true)
       } catch {
         if (!cancelled) setIaConected(false)
