@@ -10,6 +10,7 @@ import Rendimiento    from './Rendimiento'
 import Agenda         from './Agenda'
 import Reportes       from './Reportes'
 import Configuracion  from './Configuracion'
+import Chatbot        from './Chatbot'
 import { getEstudiantes } from './lib/queries'
 
 const TITLES = {
@@ -17,6 +18,7 @@ const TITLES = {
   estudiantes:   { title:'Mis Estudiantes',       breadcrumb:'E-Tutor / Tutor / Mis Estudiantes' },
   alertas:       { title:'Alertas de Riesgo',     breadcrumb:'E-Tutor / Tutor / Alertas' },
   perfil:        { title:'Perfil del Estudiante', breadcrumb:'E-Tutor / Tutor / Mis Estudiantes / Perfil' },
+  chatbot:       { title:'Asistente IA',           breadcrumb:'E-Tutor / Tutor / Asistente IA' },
   rendimiento:   { title:'Rendimiento Académico', breadcrumb:'E-Tutor / Tutor / Rendimiento' },
   agenda:        { title:'Agenda — Psicólogo',    breadcrumb:'E-Tutor / Tutor / Agenda' },
   reportes:      { title:'Reportes y Estadísticas',breadcrumb:'E-Tutor / Tutor / Reportes' },
@@ -110,6 +112,7 @@ export default function App() {
           {view === 'agenda'        && <Agenda         onVerEstudiante={handleVerEstudiante}/>}
           {view === 'reportes'      && <Reportes       estudiantes={estudiantes}/>}
           {view === 'configuracion' && <Configuracion/>}
+          {view === 'chatbot'       && <Chatbot estudiantes={estudiantes} onVerEstudiante={handleVerEstudiante}/>}
           {view === 'perfil'        && estudiante && <Perfil estudiante={estudiante} onRefresh={refreshEstudiantes}/>}
         </div>
       </main>

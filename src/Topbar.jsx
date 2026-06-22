@@ -36,35 +36,7 @@ export default function Topbar({ title, breadcrumb, showBack, onBack }) {
       </div>
 
       <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
-        <div style={{
-          position:'relative', display:'flex', alignItems:'center',
-          background:'#F4F6F9', border:'1px solid #E5E7EB', borderRadius:'8px',
-          height:'36px', padding:'0 12px', gap:'8px', width:'240px', maxWidth:'28vw'
-        }}>
-          <i className="ti ti-search" style={{ color:'#9CA3AF' }}/>
-          <input
-            placeholder="Buscar estudiante..."
-            style={{
-              border:'none', background:'transparent', outline:'none',
-              fontSize:'13px', width:'100%'
-            }}
-          />
-        </div>
-        <button style={{
-          position:'relative', border:'1px solid #E5E7EB', background:'#fff',
-          width:'36px', height:'36px', borderRadius:'8px',
-          cursor:'pointer', color:'#374151',
-          display:'flex', alignItems:'center', justifyContent:'center'
-        }}>
-          <i className="ti ti-bell"/>
-          <span style={{
-            position:'absolute', top:'-5px', right:'-5px',
-            background:'#DC2626', color:'#fff', fontSize:'9px', fontWeight:600,
-            width:'16px', height:'16px', borderRadius:'8px',
-            display:'flex', alignItems:'center', justifyContent:'center'
-          }}>3</span>
-        </button>
-        <div style={{
+<div style={{
           width:'32px', height:'32px', borderRadius:'50%', background:'#E85D04',
           color:'#fff', fontWeight:600, fontSize:'12px',
           display:'flex', alignItems:'center', justifyContent:'center'

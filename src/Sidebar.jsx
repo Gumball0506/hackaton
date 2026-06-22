@@ -5,13 +5,14 @@ export default function Sidebar({ view, onNav, onLogout, estudiantes = [] }) {
   ).length || null
 
   const NAV = [
-    { key:'dashboard',     icon:'ti-layout-dashboard', label:'Panel general',      badge:null,         badgeBg:'' },
-    { key:'estudiantes',   icon:'ti-users',             label:'Mis estudiantes',    badge:totalEst,     badgeBg:'#E85D04' },
-    { key:'alertas',       icon:'ti-alert-triangle',    label:'Alertas de riesgo',  badge:totalAlertas, badgeBg:'#DC2626' },
-    { key:'rendimiento',   icon:'ti-chart-line',        label:'Rendimiento',        badge:null,         badgeBg:'' },
-    { key:'agenda',        icon:'ti-calendar',          label:'Agenda',             badge:null,         badgeBg:'' },
-    { key:'reportes',      icon:'ti-file-analytics',    label:'Reportes',           badge:null,         badgeBg:'' },
-    { key:'configuracion', icon:'ti-settings',          label:'Configuración',      badge:null,         badgeBg:'' },
+    { key:'dashboard',     icon:'ti-layout-dashboard', label:'Panel general'      },
+    { key:'estudiantes',   icon:'ti-users',             label:'Mis estudiantes'   },
+    { key:'alertas',       icon:'ti-alert-triangle',    label:'Alertas de riesgo' },
+    { key:'rendimiento',   icon:'ti-chart-line',        label:'Rendimiento'       },
+    { key:'agenda',        icon:'ti-calendar',          label:'Agenda'            },
+    { key:'reportes',      icon:'ti-file-analytics',    label:'Reportes'          },
+    { key:'chatbot',        icon:'ti-robot',              label:'Asistente IA'      },
+    { key:'configuracion', icon:'ti-settings',          label:'Configuración'     },
   ]
   return (
     <aside style={{
@@ -81,14 +82,6 @@ export default function Sidebar({ view, onNav, onLogout, estudiantes = [] }) {
             >
               <i className={`ti ${item.icon}`} style={{ width:'18px', textAlign:'center', flexShrink:0 }}/>
               <span style={{ flex:1 }}>{item.label}</span>
-              {item.badge && (
-                <span style={{
-                  fontSize:'10px', fontWeight:600,
-                  background: item.badgeBg, color:'#fff',
-                  minWidth:'19px', height:'19px', borderRadius:'10px',
-                  display:'inline-flex', alignItems:'center', justifyContent:'center', padding:'0 5px'
-                }}>{item.badge}</span>
-              )}
             </button>
           )
         })}

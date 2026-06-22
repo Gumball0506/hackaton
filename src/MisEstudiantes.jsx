@@ -47,13 +47,17 @@ export default function MisEstudiantes({ estudiantes, onVerEstudiante }) {
           ))}
           <div style={{
             display:'flex', alignItems:'center', gap:'8px', background:'#fff',
-            border:'1px solid #E5E7EB', borderRadius:'8px', padding:'0 12px', height:'36px', width:'240px'
+            border:'1px solid #E5E7EB', borderRadius:'8px', padding:'0 12px', height:'36px', width:'260px'
           }}>
-            <i className="ti ti-search" style={{ color:'#9CA3AF' }}/>
+            <i className="ti ti-search" style={{ color:'#9CA3AF', flexShrink:0 }}/>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Buscar nombre o código..."
               style={{ border:'none', outline:'none', fontSize:'13px', width:'100%', background:'transparent' }}
             />
+            {search && (
+              <button onClick={() => setSearch('')}
+                style={{ border:'none', background:'none', cursor:'pointer', color:'#9CA3AF', padding:0, fontSize:13, flexShrink:0 }}>✕</button>
+            )}
           </div>
         </div>
       </div>
