@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Login          from './Login'
 import Sidebar        from './Sidebar'
 import Topbar         from './Topbar'
@@ -6,13 +6,21 @@ import Dashboard      from './Dashboard'
 import MisEstudiantes from './MisEstudiantes'
 import Alertas        from './Alertas'
 import Perfil         from './Perfil'
+import Rendimiento    from './Rendimiento'
+import Agenda         from './Agenda'
+import Reportes       from './Reportes'
+import Configuracion  from './Configuracion'
 import { getEstudiantes } from './lib/queries'
 
 const TITLES = {
-  dashboard:   { title:'Panel general',      breadcrumb:'E-Tutor / Tutor / Panel' },
-  estudiantes: { title:'Mis Estudiantes',    breadcrumb:'E-Tutor / Tutor / Mis Estudiantes' },
-  alertas:     { title:'Alertas de Riesgo',  breadcrumb:'E-Tutor / Tutor / Alertas' },
-  perfil:      { title:'Perfil del Estudiante', breadcrumb:'E-Tutor / Tutor / Mis Estudiantes / Perfil' },
+  dashboard:     { title:'Panel general',         breadcrumb:'E-Tutor / Tutor / Panel' },
+  estudiantes:   { title:'Mis Estudiantes',       breadcrumb:'E-Tutor / Tutor / Mis Estudiantes' },
+  alertas:       { title:'Alertas de Riesgo',     breadcrumb:'E-Tutor / Tutor / Alertas' },
+  perfil:        { title:'Perfil del Estudiante', breadcrumb:'E-Tutor / Tutor / Mis Estudiantes / Perfil' },
+  rendimiento:   { title:'Rendimiento Académico', breadcrumb:'E-Tutor / Tutor / Rendimiento' },
+  agenda:        { title:'Agenda — Psicólogo',    breadcrumb:'E-Tutor / Tutor / Agenda' },
+  reportes:      { title:'Reportes y Estadísticas',breadcrumb:'E-Tutor / Tutor / Reportes' },
+  configuracion: { title:'Configuración',         breadcrumb:'E-Tutor / Tutor / Configuración' },
 }
 
 export default function App() {
@@ -95,10 +103,14 @@ export default function App() {
               <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
             </div>
           )}
-          {view === 'dashboard'   && <Dashboard     estudiantes={estudiantes} onVerEstudiante={handleVerEstudiante} onRefresh={refreshEstudiantes}/>}
-          {view === 'estudiantes' && <MisEstudiantes estudiantes={estudiantes} onVerEstudiante={handleVerEstudiante}/>}
-          {view === 'alertas'     && <Alertas        estudiantes={estudiantes} onVerEstudiante={handleVerEstudiante}/>}
-          {view === 'perfil'      && estudiante && <Perfil estudiante={estudiante} onRefresh={refreshEstudiantes}/>}
+          {view === 'dashboard'     && <Dashboard     estudiantes={estudiantes} onVerEstudiante={handleVerEstudiante} onRefresh={refreshEstudiantes}/>}
+          {view === 'estudiantes'   && <MisEstudiantes estudiantes={estudiantes} onVerEstudiante={handleVerEstudiante}/>}
+          {view === 'alertas'       && <Alertas        estudiantes={estudiantes} onVerEstudiante={handleVerEstudiante}/>}
+          {view === 'rendimiento'   && <Rendimiento    estudiantes={estudiantes} onVerEstudiante={handleVerEstudiante}/>}
+          {view === 'agenda'        && <Agenda         onVerEstudiante={handleVerEstudiante}/>}
+          {view === 'reportes'      && <Reportes       estudiantes={estudiantes}/>}
+          {view === 'configuracion' && <Configuracion/>}
+          {view === 'perfil'        && estudiante && <Perfil estudiante={estudiante} onRefresh={refreshEstudiantes}/>}
         </div>
       </main>
     </div>

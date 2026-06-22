@@ -5,9 +5,13 @@ export default function Sidebar({ view, onNav, onLogout, estudiantes = [] }) {
   ).length || null
 
   const NAV = [
-    { key:'dashboard',  icon:'ti-layout-dashboard', label:'Panel general',     badge:null,          badgeBg:'' },
-    { key:'estudiantes',icon:'ti-users',             label:'Mis estudiantes',   badge:totalEst,      badgeBg:'#E85D04' },
-    { key:'alertas',    icon:'ti-alert-triangle',    label:'Alertas de riesgo', badge:totalAlertas,  badgeBg:'#DC2626' },
+    { key:'dashboard',     icon:'ti-layout-dashboard', label:'Panel general',      badge:null,         badgeBg:'' },
+    { key:'estudiantes',   icon:'ti-users',             label:'Mis estudiantes',    badge:totalEst,     badgeBg:'#E85D04' },
+    { key:'alertas',       icon:'ti-alert-triangle',    label:'Alertas de riesgo',  badge:totalAlertas, badgeBg:'#DC2626' },
+    { key:'rendimiento',   icon:'ti-chart-line',        label:'Rendimiento',        badge:null,         badgeBg:'' },
+    { key:'agenda',        icon:'ti-calendar',          label:'Agenda',             badge:null,         badgeBg:'' },
+    { key:'reportes',      icon:'ti-file-analytics',    label:'Reportes',           badge:null,         badgeBg:'' },
+    { key:'configuracion', icon:'ti-settings',          label:'Configuración',      badge:null,         badgeBg:'' },
   ]
   return (
     <aside style={{
