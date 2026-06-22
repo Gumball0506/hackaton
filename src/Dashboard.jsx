@@ -1,6 +1,5 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { calcKPIs } from './lib/queries'
-import { callAIRecommend } from './lib/ai'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 
@@ -47,81 +46,6 @@ export default function Dashboard({ estudiantes, onVerEstudiante, onRefresh }) {
   const [page, setPage] = useState(1)
   const kpis = calcKPIs(estudiantes)
 
-  // ── Estado IA ──────────────────────────────────────────────────────────────
-  const [iaStatus,   setIaStatus]   = useState('idle')   // 'idle'|'loading'|'ok'|'error'
-  const [iaResult,   setIaResult]   = useState(null)
-  const [iaError,    setIaError]    = useState('')
-  const [iaConected, setIaConected] = useState(null)     // null=sin comprobar, true, false
-  const abortRef = useRef(null)
-
-  // Comprueba si el API responde al montar (sólo una vez por sesión)
-  useEffect(() => {
-    let cancelled = false
-    async function checkConexion() {
-      try {
-        await fetch(`${BACKEND_URL}/api/health`).then(r => { if (!r.ok) throw new Error(r.status) })
-        if (!cancelled) setIaConected(true)
-      } catch {
-        if (!cancelled) setIaConected(false)
-      }
-    }
-    // Usamos sessionStorage para no re-chequear en cada navegación
-    const cached = sessionStorage.getItem('ia_conexion')
-    if (cached !== null) {
-      setIaConected(cached === 'true')
-    } else {
-      checkConexion().then(() => {
-        sessionStorage.setItem('ia_conexion', String(!cancelled ? iaConected : false))
-      })
-    }
-    return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  async function solicitarRecomendaciones() {
-    if (iaStatus === 'loading') return
-    abortRef.current?.abort()
-    abortRef.current = new AbortController()
-    setIaStatus('loading')
-    setIaError('')
-    setIaResult(null)
-
-    const rojos  = estudiantes.filter(e => e.riesgo === 'ROJO' || e.riesgo === 'ROJO_FALTAS')
-    const ambar  = estudiantes.filter(e => e.riesgo === 'AMBAR')
-    const sinNota = estudiantes.filter(e => e.promedio === null)
-    const weakAreas = []
-    if (rojos.length > 0) weakAreas.push(`${rojos.length} estudiantes con riesgo alto`)
-    if (ambar.length > 0) weakAreas.push(`${ambar.length} estudiantes con riesgo moderado`)
-    if (sinNota.length > 0) weakAreas.push(`${sinNota.length} estudiantes sin nota registrada`)
-    if (kpis.avg && parseFloat(kpis.avg) < 13) weakAreas.push(`Promedio general bajo: ${kpis.avg}/20`)
-
-    const profile = {
-      total:       kpis.total,
-      promedio:    kpis.avg,
-      rojos:       kpis.rojos,
-      ambar:       kpis.ambar,
-      verdes:      kpis.verdes,
-      sinNota:     sinNota.length,
-      conFaltas5:  estudiantes.filter(e => e.faltas >= 5).length,
-      curso:       'Base de Datos II',
-      periodo:     '2026-I',
-    }
-
-    try {
-      const result = await callAIRecommend(profile, weakAreas, abortRef.current.signal)
-      setIaResult(result)
-      setIaStatus('ok')
-      setIaConected(true)
-      sessionStorage.setItem('ia_conexion', 'true')
-    } catch (err) {
-      if (err.name === 'AbortError') { setIaStatus('idle'); return }
-      setIaError(err.message)
-      setIaStatus('error')
-      setIaConected(false)
-      sessionStorage.setItem('ia_conexion', 'false')
-    }
-  }
-
   const ordenados = [...estudiantes].sort((a, b) => {
     const order = { ROJO:0, ROJO_FALTAS:1, AMBAR:2, VERDE:3, PENDIENTE:4 }
     return (order[a.riesgo] ?? 4) - (order[b.riesgo] ?? 4)
@@ -165,21 +89,6 @@ export default function Dashboard({ estudiantes, onVerEstudiante, onRefresh }) {
           <i className="ti ti-refresh"/>Actualizar
         </button>
 
-        {/* Badge de estado de conexión con el API de IA */}
-        <div style={{
-          marginLeft:'auto', display:'flex', alignItems:'center', gap:6,
-          background: iaConected === true ? '#F0FDF4' : iaConected === false ? '#FEF2F2' : '#F4F6F9',
-          border: `1px solid ${iaConected === true ? '#BBF7D0' : iaConected === false ? '#FECACA' : '#E5E7EB'}`,
-          borderRadius:20, padding:'4px 12px', fontSize:11.5, fontWeight:600,
-          color: iaConected === true ? '#15803D' : iaConected === false ? '#991B1B' : '#6B7280',
-        }}>
-          <span style={{
-            width:7, height:7, borderRadius:'50%', display:'inline-block', flexShrink:0,
-            background: iaConected === true ? '#16A34A' : iaConected === false ? '#DC2626' : '#9CA3AF',
-            boxShadow: iaConected === true ? '0 0 0 2px #BBF7D0' : 'none',
-          }}/>
-          {iaConected === true ? 'IA conectada' : iaConected === false ? 'IA sin conexión' : 'Verificando IA...'}
-        </div>
       </div>
 
       {/* KPI row */}
@@ -223,98 +132,6 @@ export default function Dashboard({ estudiantes, onVerEstudiante, onRefresh }) {
             </div>
           )
         })}
-      </div>
-
-      {/* ── RECOMENDACIONES IA ─────────────────────────────────────────────── */}
-      <div style={{ background:'#fff', border:'1px solid #E5E7EB', borderRadius:'10px', padding:'18px 20px', marginBottom:'20px', boxShadow:'0 1px 3px rgba(0,0,0,.08)' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10, marginBottom: iaResult || iaError ? 14 : 0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ fontSize:20 }}>🤖</span>
-            <div>
-              <div style={{ fontSize:'14px', fontWeight:600 }}>Recomendaciones IA para el grupo</div>
-              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:1 }}>
-                Análisis del grupo completo — Llama 3 · llm.mystic-byte.com
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={solicitarRecomendaciones}
-            disabled={iaStatus === 'loading' || estudiantes.length === 0}
-            style={{
-              display:'inline-flex', alignItems:'center', gap:7,
-              background: iaStatus === 'loading' ? '#F3F4F6' : '#1A1A2E',
-              color: iaStatus === 'loading' ? '#9CA3AF' : '#fff',
-              border:'none', borderRadius:8, padding:'9px 16px',
-              fontSize:'13px', fontWeight:600,
-              cursor: iaStatus === 'loading' || estudiantes.length === 0 ? 'not-allowed' : 'pointer',
-              transition:'background .15s',
-            }}
-          >
-            {iaStatus === 'loading' ? (
-              <>
-                <span style={{ width:13, height:13, border:'2px solid #D1D5DB', borderTopColor:'#6B7280', borderRadius:'50%', display:'inline-block', animation:'spin .7s linear infinite' }}/>
-                Analizando...
-              </>
-            ) : (
-              <><i className="ti ti-sparkles"/>Analizar con IA</>
-            )}
-          </button>
-        </div>
-
-        {/* Resultado de recomendaciones */}
-        {iaStatus === 'ok' && iaResult && (
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {iaResult.resumen && (
-              <div style={{ background:'#F0F4F8', borderRadius:8, padding:'11px 14px', fontSize:13, color:'#1A1A2E', lineHeight:1.65, borderLeft:'3px solid #1A1A2E' }}>
-                {iaResult.resumen}
-              </div>
-            )}
-            {iaResult.recomendaciones?.length > 0 && (
-              <div>
-                <div style={{ fontSize:11.5, fontWeight:600, color:'#6B7280', textTransform:'uppercase', letterSpacing:'.4px', marginBottom:7 }}>Recomendaciones</div>
-                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                  {iaResult.recomendaciones.map((r, i) => (
-                    <div key={i} style={{ display:'flex', gap:8, background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:7, padding:'8px 12px', fontSize:12.5, color:'#1E40AF', lineHeight:1.5 }}>
-                      <span style={{ fontWeight:700, flexShrink:0, color:'#2563EB' }}>{i + 1}.</span>
-                      {r}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {iaResult.estrategias?.length > 0 && (
-              <div>
-                <div style={{ fontSize:11.5, fontWeight:600, color:'#6B7280', textTransform:'uppercase', letterSpacing:'.4px', marginBottom:7 }}>Estrategias sugeridas</div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
-                  {iaResult.estrategias.map((s, i) => (
-                    <span key={i} style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', color:'#15803D', borderRadius:20, padding:'4px 12px', fontSize:12, fontWeight:500 }}>
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {iaStatus === 'error' && (
-          <div style={{ display:'flex', gap:8, alignItems:'flex-start', background:'#FFF8F0', border:'1px solid #FED7AA', borderRadius:8, padding:'10px 13px', fontSize:12.5, color:'#9A3412' }}>
-            <i className="ti ti-plug-x" style={{ flexShrink:0, marginTop:1 }}/>
-            <span>{iaError || 'No se pudo contactar la IA. Verifica la conexión con llm.mystic-byte.com.'}</span>
-          </div>
-        )}
-
-        {iaStatus === 'idle' && estudiantes.length > 0 && (
-          <div style={{ fontSize:12.5, color:'#9CA3AF', textAlign:'center', padding:'8px 0' }}>
-            Pulsa "Analizar con IA" para obtener recomendaciones personalizadas basadas en los datos del grupo.
-          </div>
-        )}
-
-        {estudiantes.length === 0 && (
-          <div style={{ fontSize:12.5, color:'#9CA3AF', textAlign:'center', padding:'8px 0' }}>
-            Carga los estudiantes primero para habilitar el análisis IA.
-          </div>
-        )}
       </div>
 
       {/* Tabla */}
