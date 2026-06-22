@@ -27,13 +27,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { getPerfilJSON } from './lib/queries'
-
-// ── STUB — reemplazar con src/lib/ai.js real ─────────────────────────────────
-async function callAI(_messages, _context) {
-  // TODO: conectar API de IA aquí
-  throw new Error('IA_NOT_CONNECTED')
-}
-// ─────────────────────────────────────────────────────────────────────────────
+import { callAI, clearSession } from './lib/ai'
 
 const C = {
   brand:'#E85D04', dark:'#1A1A2E', border:'#E5E7EB',
@@ -113,6 +107,10 @@ export default function Chatbot({ estudiantes = [] }) {
   const estSeleccionado = estudiantes.find(e => e.id === estudianteId)
 
   async function seleccionarEstudiante(e) {
+    // Si cambiamos de estudiante, descartamos la sesión anterior
+    if (estudianteId && estudianteId !== e.id) {
+      clearSession(estudianteId)
+    }
     setEstudianteId(e.id)
     setBusqueda(e.nombre)
     setShowList(false)
@@ -154,11 +152,7 @@ export default function Chatbot({ estudiantes = [] }) {
       setMessages(prev => [...prev.slice(0, -1), { role:'assistant', content:respuesta }])
     } catch (err) {
       setMessages(prev => prev.slice(0, -1))
-      if (err.message === 'IA_NOT_CONNECTED') {
-        setError('IA no conectada. Implementar callAI() en src/lib/ai.js para activar respuestas.')
-      } else {
-        setError('Error al contactar la IA: ' + err.message)
-      }
+      setError('Error al contactar la IA: ' + err.message)
     } finally {
       setSending(false)
     }
@@ -285,12 +279,13 @@ export default function Chatbot({ estudiantes = [] }) {
             </div>
 
             {/* Estado IA */}
-            <div style={{ background:'#FFF8F0', border:'1px solid #FED7AA', borderRadius:8, padding:'9px 11px' }}>
-              <div style={{ fontSize:10.5, fontWeight:600, color:C.brand, marginBottom:2 }}>
-                <i className="ti ti-plug-x"/> IA pendiente de conexión
+            <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:8, padding:'9px 11px' }}>
+              <div style={{ fontSize:10.5, fontWeight:600, color:'#15803D', marginBottom:2, display:'flex', alignItems:'center', gap:5 }}>
+                <span style={{ width:7, height:7, borderRadius:'50%', background:'#16A34A', display:'inline-block', flexShrink:0 }}/>
+                IA conectada — Llama 3 (llm.mystic-byte.com)
               </div>
-              <div style={{ fontSize:10, color:'#9A3412', lineHeight:1.5 }}>
-                Implementar <code style={{ background:'#FEE2D5', padding:'1px 4px', borderRadius:3 }}>callAI()</code> en <code style={{ background:'#FEE2D5', padding:'1px 4px', borderRadius:3 }}>src/lib/ai.js</code>
+              <div style={{ fontSize:10, color:'#166534', lineHeight:1.5 }}>
+                Respuestas generadas por <strong>Llama 3</strong> vía servidor local RTX 4060. Contexto del estudiante incluido.
               </div>
             </div>
           </div>
