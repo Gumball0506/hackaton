@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { callAIRisk } from './lib/ai'
 
 const C = {
   red:'#DC2626', redBg:'#FEF2F2', redBorder:'#FECACA',
@@ -104,6 +105,28 @@ export default function Alertas({ estudiantes=[], onVerEstudiante }) {
   const [atendidas,  setAtendidas]  = useState(new Set())
   const [expandidos, setExpandidos] = useState(new Set())
   const [notifEnv,   setNotifEnv]   = useState(new Set())
+
+  // ── Estado análisis IA por estudiante ──────────────────────────────────────
+  // { [estudianteId]: { status: 'idle'|'loading'|'ok'|'error', result: null|{...}, error: '' } }
+  const [iaAnalisis, setIaAnalisis] = useState({})
+
+  async function analizarConIA(e) {
+    const eid = e.id
+    // Si ya está cargando, no lanzar otro
+    if (iaAnalisis[eid]?.status === 'loading') return
+
+    setIaAnalisis(prev => ({ ...prev, [eid]: { status:'loading', result:null, error:'' } }))
+
+    // Asegurar que el grupo esté expandido
+    setExpandidos(prev => { const s=new Set(prev); s.add(eid); return s })
+
+    try {
+      const result = await callAIRisk(e)
+      setIaAnalisis(prev => ({ ...prev, [eid]: { status:'ok', result, error:'' } }))
+    } catch (err) {
+      setIaAnalisis(prev => ({ ...prev, [eid]: { status:'error', result:null, error: err.message } }))
+    }
+  }
 
   const todasAlertas = useMemo(() => generarAlertas(estudiantes), [estudiantes])
 
@@ -567,7 +590,80 @@ export default function Alertas({ estudiantes=[], onVerEstudiante }) {
                           <i className={`ti ${notifOk?'ti-check':'ti-send'}`}/>
                           {notifOk?'Notificación enviada':'Enviar notificación'}
                         </button>
+
+                        {/* Botón Analizar con IA — solo para ROJO o AMBAR */}
+                        {(e.riesgo==='ROJO'||e.riesgo==='ROJO_FALTAS'||e.riesgo==='AMBAR') && (
+                          <button
+                            onClick={()=>analizarConIA(e)}
+                            disabled={iaAnalisis[eid]?.status==='loading'}
+                            style={{
+                              display:'inline-flex', alignItems:'center', gap:6,
+                              background: iaAnalisis[eid]?.status==='loading' ? '#F3F4F6' : '#1A1A2E',
+                              color: iaAnalisis[eid]?.status==='loading' ? '#9CA3AF' : '#fff',
+                              border:'none', borderRadius:8, padding:'8px 15px',
+                              fontSize:12.5, fontWeight:600,
+                              cursor: iaAnalisis[eid]?.status==='loading' ? 'not-allowed' : 'pointer',
+                              marginLeft:'auto',
+                            }}
+                          >
+                            {iaAnalisis[eid]?.status==='loading' ? (
+                              <>
+                                <span style={{ width:12, height:12, border:'2px solid #D1D5DB', borderTopColor:'#6B7280', borderRadius:'50%', display:'inline-block', animation:'spin .7s linear infinite' }}/>
+                                Analizando...
+                              </>
+                            ) : (
+                              <><i className="ti ti-sparkles"/>Analizar con IA</>
+                            )}
+                          </button>
+                        )}
                       </div>
+
+                      {/* Panel de resultado del análisis IA */}
+                      {iaAnalisis[eid] && iaAnalisis[eid].status !== 'idle' && (
+                        <div style={{ marginBottom:14 }}>
+                          {iaAnalisis[eid].status === 'loading' && (
+                            <div style={{ background:'#F0F4F8', borderRadius:8, padding:'12px 14px', fontSize:12.5, color:'#6B7280', display:'flex', alignItems:'center', gap:8 }}>
+                              <span style={{ width:14, height:14, border:'2px solid #D1D5DB', borderTopColor:'#1A1A2E', borderRadius:'50%', display:'inline-block', animation:'spin .7s linear infinite', flexShrink:0 }}/>
+                              Analizando perfil de riesgo con IA...
+                            </div>
+                          )}
+
+                          {iaAnalisis[eid].status === 'error' && (
+                            <div style={{ background:'#FFF8F0', border:'1px solid #FED7AA', borderRadius:8, padding:'10px 13px', fontSize:12, color:'#9A3412', display:'flex', gap:8 }}>
+                              <i className="ti ti-plug-x" style={{ flexShrink:0 }}/>
+                              {iaAnalisis[eid].error || 'Error al contactar la IA.'}
+                            </div>
+                          )}
+
+                          {iaAnalisis[eid].status === 'ok' && iaAnalisis[eid].result && (
+                            <div style={{ background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:8, padding:'13px 15px', fontSize:12.5 }}>
+                              <div style={{ fontWeight:600, color:'#1E40AF', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+                                <i className="ti ti-robot" style={{ fontSize:14 }}/>
+                                Análisis IA — Riesgo: <span style={{
+                                  background: iaAnalisis[eid].result.nivel==='ALTO'?'#FEF2F2':iaAnalisis[eid].result.nivel==='MEDIO'?'#FFFBEB':'#F0FDF4',
+                                  color: iaAnalisis[eid].result.nivel==='ALTO'?'#991B1B':iaAnalisis[eid].result.nivel==='MEDIO'?'#B45309':'#15803D',
+                                  borderRadius:20, padding:'2px 9px', fontSize:11, fontWeight:700
+                                }}>{iaAnalisis[eid].result.nivel}</span>
+                              </div>
+                              {iaAnalisis[eid].result.resumen && (
+                                <p style={{ margin:'0 0 8px', color:'#1E40AF', lineHeight:1.55 }}>
+                                  {iaAnalisis[eid].result.resumen}
+                                </p>
+                              )}
+                              {iaAnalisis[eid].result.recomendaciones?.length > 0 && (
+                                <div>
+                                  <div style={{ fontSize:11, fontWeight:600, color:'#3B82F6', marginBottom:5, textTransform:'uppercase', letterSpacing:'.3px' }}>Recomendaciones</div>
+                                  <ul style={{ margin:0, paddingLeft:16, display:'flex', flexDirection:'column', gap:4 }}>
+                                    {iaAnalisis[eid].result.recomendaciones.map((r,i) => (
+                                      <li key={i} style={{ fontSize:12, color:'#1D4ED8', lineHeight:1.5 }}>{r}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -576,6 +672,8 @@ export default function Alertas({ estudiantes=[], onVerEstudiante }) {
           </div>
         )}
       </div>
+
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
 }
