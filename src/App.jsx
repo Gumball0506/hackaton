@@ -20,6 +20,7 @@ export default function App() {
   const [view,       setView]       = useState('dashboard')
   const [prevView,   setPrevView]   = useState('dashboard')
   const [estudiante, setEstudiante] = useState(null)
+  const [tutor,       setTutor]       = useState(null)
   const [estudiantes, setEstudiantes] = useState([])
   const [loading,    setLoading]    = useState(false)
 
@@ -35,12 +36,18 @@ export default function App() {
     }
   }
 
-  function handleLogin() {
+  function handleLogin(user, tutorData) {
+    setTutor(tutorData)
     setScreen('app')
     cargarEstudiantes()
   }
 
-  function handleLogout() { setScreen('login'); setEstudiantes([]) }
+  async function handleLogout() {
+    await import('./lib/supabase').then(m => m.supabase.auth.signOut())
+    setScreen('login')
+    setEstudiantes([])
+    setTutor(null)
+  }
 
   function handleNav(v) { setView(v); setEstudiante(null) }
 

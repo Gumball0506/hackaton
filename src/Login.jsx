@@ -1,28 +1,91 @@
 import { useState } from 'react'
+import { supabase } from './lib/supabase'
 
 const INSTITUTIONAL_REGEX = /^[a-zA-Z0-9._%+-]+@(unfv\.edu\.pe|correo\.unfv\.edu\.pe)$/
 
-export default function Login({ onLogin }) {
-  const [email, setEmail]       = useState('')
-  const [pass, setPass]         = useState('')
-  const [showPass, setShowPass] = useState(false)
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
+const ERRORES = {
+  'Invalid login credentials':    'Correo o contraseña incorrectos.',
+  'Email not confirmed':          'Correo no confirmado. Contacta al administrador.',
+  'Too many requests':            'Demasiados intentos. Espera unos minutos.',
+  'User not found':               'Usuario no encontrado en el sistema.',
+  'Invalid email or password':    'Correo o contraseña incorrectos.',
+}
 
-  function handleSubmit(e) {
+function traducirError(msg = '') {
+  for (const [key, val] of Object.entries(ERRORES)) {
+    if (msg.includes(key)) return val
+  }
+  if (msg.toLowerCase().includes('password')) return 'Contraseña incorrecta.'
+  if (msg.toLowerCase().includes('email'))    return 'Correo no registrado.'
+  return 'Acceso denegado. Verifica tus credenciales.'
+}
+
+export default function Login({ onLogin }) {
+  const [email,    setEmail]    = useState('')
+  const [pass,     setPass]     = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [error,    setError]    = useState('')
+  const [loading,  setLoading]  = useState(false)
+  const [intentos, setIntentos] = useState(0)
+
+  async function handleSubmit(e) {
     e.preventDefault()
+    setError('')
+
     if (!INSTITUTIONAL_REGEX.test(email)) {
-      setError('Ingresa un correo institucional UNFV válido (@unfv.edu.pe)')
+      setError('Solo correos institucionales UNFV (@unfv.edu.pe).')
       return
     }
     if (!pass) {
-      setError('Ingresa tu contraseña')
+      setError('Ingresa tu contraseña.')
       return
     }
-    setError('')
+    if (intentos >= 5) {
+      setError('Cuenta bloqueada temporalmente. Demasiados intentos fallidos.')
+      return
+    }
+
     setLoading(true)
-    setTimeout(() => { setLoading(false); onLogin() }, 1200)
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password: pass,
+      })
+
+      if (authError) {
+        const nuevosIntentos = intentos + 1
+        setIntentos(nuevosIntentos)
+        if (nuevosIntentos >= 5) {
+          setError('Cuenta bloqueada temporalmente por demasiados intentos fallidos. Contacta al administrador.')
+        } else {
+          setError(traducirError(authError.message) + (nuevosIntentos >= 3 ? ` (Intento ${nuevosIntentos}/5)` : ''))
+        }
+        return
+      }
+
+      // Verificar que sea tutor registrado
+      const { data: tutor } = await supabase
+        .from('tutores')
+        .select('id, nombre_completo')
+        .eq('email', email.toLowerCase().trim())
+        .single()
+
+      if (!tutor) {
+        await supabase.auth.signOut()
+        setError('Acceso denegado. Tu cuenta no tiene permisos de tutor en este sistema.')
+        return
+      }
+
+      setIntentos(0)
+      onLogin(data.user, tutor)
+    } catch {
+      setError('Error de conexión. Verifica tu internet e intenta nuevamente.')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const bloqueado = intentos >= 5
 
   return (
     <div style={{ display:'flex', minHeight:'100vh', width:'100%' }}>
@@ -32,11 +95,9 @@ export default function Login({ onLogin }) {
         display:'flex', flexDirection:'column', justifyContent:'center',
         padding:'56px 60px', position:'relative', overflow:'hidden'
       }}>
-        {/* glow decoration */}
         <div style={{
-          position:'absolute', top:'-80px', left:'-80px',
-          width:'320px', height:'320px', borderRadius:'50%',
-          background:'radial-gradient(circle, rgba(232,93,4,0.15) 0%, transparent 70%)',
+          position:'absolute', top:'-80px', left:'-80px', width:'320px', height:'320px',
+          borderRadius:'50%', background:'radial-gradient(circle, rgba(232,93,4,0.15) 0%, transparent 70%)',
           pointerEvents:'none'
         }}/>
         <div style={{ maxWidth:'420px', position:'relative', zIndex:1 }}>
@@ -67,8 +128,7 @@ export default function Login({ onLogin }) {
               <div key={f.text} style={{
                 display:'inline-flex', alignItems:'center', gap:'10px',
                 background:'#252545', color:'#A0A0C0', borderRadius:'20px',
-                padding:'9px 15px', fontSize:'12.5px', width:'max-content', maxWidth:'100%',
-                animation:'fadeSlideIn 0.5s ease both'
+                padding:'9px 15px', fontSize:'12.5px', width:'max-content', maxWidth:'100%'
               }}>
                 <i className={`ti ${f.icon}`} style={{ color:f.color }}/>
                 {f.text}
@@ -76,10 +136,7 @@ export default function Login({ onLogin }) {
             ))}
           </div>
         </div>
-        <div style={{
-          position:'absolute', bottom:'28px', left:'60px',
-          fontSize:'11px', color:'#555575'
-        }}>
+        <div style={{ position:'absolute', bottom:'28px', left:'60px', fontSize:'11px', color:'#555575' }}>
           Universidad Nacional Federico Villarreal · VRINI · OCIDE
         </div>
       </div>
@@ -87,14 +144,12 @@ export default function Login({ onLogin }) {
       {/* Columna derecha */}
       <div style={{
         flex:1, background:'#F4F6F9',
-        display:'flex', alignItems:'center', justifyContent:'center',
-        padding:'40px 24px'
+        display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 24px'
       }}>
         <div style={{ width:'100%', maxWidth:'360px', animation:'fadeUp 0.4s ease both' }}>
-          <div style={{
-            fontSize:'13px', fontWeight:600, letterSpacing:'.08em',
-            textTransform:'uppercase', color:'#E85D04'
-          }}>Bienvenido</div>
+          <div style={{ fontSize:'13px', fontWeight:600, letterSpacing:'.08em', textTransform:'uppercase', color:'#E85D04' }}>
+            Bienvenido
+          </div>
           <div style={{ fontSize:'22px', fontWeight:600, marginTop:'8px' }}>
             Inicia sesión en tu cuenta
           </div>
@@ -105,10 +160,9 @@ export default function Login({ onLogin }) {
           <form onSubmit={handleSubmit} style={{ marginTop:'28px' }}>
             {/* Email */}
             <div style={{ marginBottom:'16px' }}>
-              <label style={{
-                display:'block', fontSize:'12.5px', fontWeight:500,
-                color:'#374151', marginBottom:'6px'
-              }}>Correo institucional</label>
+              <label style={{ display:'block', fontSize:'12.5px', fontWeight:500, color:'#374151', marginBottom:'6px' }}>
+                Correo institucional
+              </label>
               <div style={{ position:'relative' }}>
                 <i className="ti ti-mail" style={{
                   position:'absolute', left:'13px', top:'50%',
@@ -119,10 +173,11 @@ export default function Login({ onLogin }) {
                   value={email}
                   onChange={e => { setEmail(e.target.value); setError('') }}
                   placeholder="usuario@unfv.edu.pe"
+                  disabled={bloqueado || loading}
                   style={{
                     width:'100%', height:'44px', border:'1px solid #E5E7EB',
                     borderRadius:'10px', padding:'0 13px 0 38px',
-                    fontSize:'14px', background:'#fff',
+                    fontSize:'14px', background: bloqueado ? '#F9FAFB' : '#fff',
                     transition:'border-color .2s'
                   }}
                 />
@@ -134,10 +189,9 @@ export default function Login({ onLogin }) {
 
             {/* Password */}
             <div style={{ marginBottom:'20px' }}>
-              <label style={{
-                display:'block', fontSize:'12.5px', fontWeight:500,
-                color:'#374151', marginBottom:'6px'
-              }}>Contraseña</label>
+              <label style={{ display:'block', fontSize:'12.5px', fontWeight:500, color:'#374151', marginBottom:'6px' }}>
+                Contraseña
+              </label>
               <div style={{ position:'relative' }}>
                 <i className="ti ti-lock" style={{
                   position:'absolute', left:'13px', top:'50%',
@@ -148,20 +202,18 @@ export default function Login({ onLogin }) {
                   value={pass}
                   onChange={e => { setPass(e.target.value); setError('') }}
                   placeholder="••••••••"
+                  disabled={bloqueado || loading}
                   style={{
                     width:'100%', height:'44px', border:'1px solid #E5E7EB',
                     borderRadius:'10px', padding:'0 42px 0 38px',
-                    fontSize:'14px', background:'#fff'
+                    fontSize:'14px', background: bloqueado ? '#F9FAFB' : '#fff'
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(v => !v)}
+                <button type="button" onClick={() => setShowPass(v => !v)}
                   style={{
-                    position:'absolute', right:'6px', top:'6px',
-                    width:'32px', height:'32px', border:'none',
-                    background:'transparent', color:'#9CA3AF',
-                    cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'
+                    position:'absolute', right:'6px', top:'6px', width:'32px', height:'32px',
+                    border:'none', background:'transparent', color:'#9CA3AF', cursor:'pointer',
+                    display:'flex', alignItems:'center', justifyContent:'center'
                   }}
                 >
                   <i className={`ti ${showPass ? 'ti-eye-off' : 'ti-eye'}`}/>
@@ -169,69 +221,83 @@ export default function Login({ onLogin }) {
               </div>
             </div>
 
-            {/* Error */}
+            {/* Error / Alerta */}
             {error && (
               <div style={{
-                background:'#FEF2F2', border:'1px solid #FECACA',
-                color:'#991B1B', fontSize:'12.5px', padding:'10px 13px',
-                borderRadius:'8px', marginBottom:'16px',
-                display:'flex', alignItems:'center', gap:'8px'
+                background: bloqueado ? '#1A1A2E' : '#FEF2F2',
+                border: `1px solid ${bloqueado ? '#E85D04' : '#FECACA'}`,
+                color: bloqueado ? '#E85D04' : '#991B1B',
+                fontSize:'12.5px', padding:'11px 13px', borderRadius:'8px',
+                marginBottom:'16px', display:'flex', alignItems:'flex-start', gap:'8px',
+                animation:'shake 0.3s ease'
               }}>
-                <i className="ti ti-alert-circle"/>
-                {error}
+                <i className={`ti ${bloqueado ? 'ti-lock' : 'ti-alert-circle'}`} style={{ flexShrink:0, marginTop:'1px' }}/>
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Indicador de intentos */}
+            {intentos >= 3 && !bloqueado && (
+              <div style={{
+                display:'flex', gap:'4px', marginBottom:'12px', justifyContent:'center'
+              }}>
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} style={{
+                    width:'28px', height:'4px', borderRadius:'2px',
+                    background: i <= intentos ? '#DC2626' : '#E5E7EB',
+                    transition:'background .2s'
+                  }}/>
+                ))}
               </div>
             )}
 
             {/* Botón */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || bloqueado}
               style={{
                 width:'100%', height:'44px',
-                background: loading ? '#F09060' : '#E85D04',
+                background: bloqueado ? '#6B7280' : loading ? '#F09060' : '#E85D04',
                 color:'#fff', border:'none', borderRadius:'10px',
-                fontSize:'15px', fontWeight:600, cursor:'pointer',
+                fontSize:'15px', fontWeight:600, cursor: bloqueado || loading ? 'not-allowed' : 'pointer',
                 display:'flex', alignItems:'center', justifyContent:'center', gap:'8px',
                 transition:'background .2s, transform .1s',
                 transform: loading ? 'scale(0.98)' : 'scale(1)'
               }}
             >
-              {loading ? (
+              {bloqueado ? (
+                <><i className="ti ti-lock"/>Acceso bloqueado</>
+              ) : loading ? (
                 <>
                   <span style={{
                     width:'16px', height:'16px', border:'2px solid rgba(255,255,255,0.4)',
                     borderTopColor:'#fff', borderRadius:'50%',
                     animation:'spin 0.7s linear infinite', display:'inline-block'
                   }}/>
-                  Ingresando...
+                  Verificando...
                 </>
               ) : (
-                <>
-                  <i className="ti ti-login"/>
-                  Ingresar
-                </>
+                <><i className="ti ti-login"/>Ingresar</>
               )}
             </button>
           </form>
 
           {/* Demo card */}
           <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'24px', marginBottom:'8px' }}>
-            Modo demo — ingresando como:
+            Acceso de demostración:
           </div>
           <div style={{
             display:'flex', alignItems:'center', gap:'11px',
-            background:'#fff', border:'1px solid #E5E7EB',
-            borderRadius:'10px', padding:'11px 13px'
+            background:'#fff', border:'1px solid #E5E7EB', borderRadius:'10px', padding:'11px 13px'
           }}>
             <div style={{
-              width:'38px', height:'38px', borderRadius:'50%',
-              background:'#E85D04', color:'#fff', fontWeight:600,
-              fontSize:'13px', display:'flex', alignItems:'center',
-              justifyContent:'center', flexShrink:0
+              width:'38px', height:'38px', borderRadius:'50%', background:'#E85D04',
+              color:'#fff', fontWeight:600, fontSize:'13px',
+              display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0
             }}>JM</div>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:'13px', fontWeight:600 }}>Mg. Jorge Mendoza Quispe</div>
-              <div style={{ fontSize:'11.5px', color:'#6B7280' }}>Tutor · Fac. Ingeniería de Sistemas</div>
+              <div style={{ fontSize:'11.5px', color:'#6B7280' }}>jorge.mendoza@unfv.edu.pe</div>
             </div>
             <span style={{
               fontSize:'9.5px', fontWeight:600, background:'#FFF0E8',
@@ -242,17 +308,9 @@ export default function Login({ onLogin }) {
       </div>
 
       <style>{`
-        @keyframes fadeUp {
-          from { opacity:0; transform:translateY(16px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
-        @keyframes fadeSlideIn {
-          from { opacity:0; transform:translateX(-12px); }
-          to   { opacity:1; transform:translateX(0); }
-        }
-        @keyframes spin {
-          to { transform:rotate(360deg); }
-        }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin   { to{transform:rotate(360deg)} }
+        @keyframes shake  { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
       `}</style>
     </div>
   )
