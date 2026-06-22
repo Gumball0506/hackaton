@@ -158,9 +158,10 @@ BEGIN
     'asistencias','mensajes','observaciones','entrevistas','citas_psicologo'
   ] LOOP
     EXECUTE format('
-      CREATE POLICY IF NOT EXISTS "allow_all_%s" ON public.%I
+      DROP POLICY IF EXISTS "allow_all_%s" ON public.%I;
+      CREATE POLICY "allow_all_%s" ON public.%I
       FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
-    ', t, t);
+    ', t, t, t, t);
   END LOOP;
 END $$;
 
@@ -170,7 +171,8 @@ VALUES ('entrevistas', 'entrevistas', false, 52428800,
         ARRAY['application/pdf','application/json','audio/mpeg','audio/wav','video/mp4'])
 ON CONFLICT (id) DO NOTHING;
 
-CREATE POLICY IF NOT EXISTS "allow_all_entrevistas_storage" ON storage.objects
+DROP POLICY IF EXISTS "allow_all_entrevistas_storage" ON storage.objects;
+CREATE POLICY "allow_all_entrevistas_storage" ON storage.objects
 FOR ALL TO anon, authenticated USING (bucket_id = 'entrevistas') WITH CHECK (bucket_id = 'entrevistas');
 
 -- ── RPC: Perfil completo por código (para chatbot móvil) ──────
