@@ -71,7 +71,7 @@ export default function App() {
 
   return (
     <div style={{ display:'flex', minHeight:'100vh', width:'100%' }}>
-      <Sidebar view={view} onNav={handleNav} onLogout={handleLogout}/>
+      <Sidebar view={view} onNav={handleNav} onLogout={handleLogout} estudiantes={estudiantes}/>
       <main style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', background:'#F4F6F9' }}>
         <Topbar
           title={meta.title}

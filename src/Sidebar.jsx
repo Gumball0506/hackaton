@@ -1,10 +1,14 @@
-const NAV = [
-  { key:'dashboard',  icon:'ti-layout-dashboard', label:'Panel general',   badge:null,  badgeBg:'' },
-  { key:'estudiantes',icon:'ti-users',             label:'Mis estudiantes', badge:'47',  badgeBg:'#E85D04' },
-  { key:'alertas',    icon:'ti-alert-triangle',    label:'Alertas de riesgo', badge:'6', badgeBg:'#DC2626' },
-]
+export default function Sidebar({ view, onNav, onLogout, estudiantes = [] }) {
+  const totalEst  = estudiantes.length || null
+  const totalAlertas = estudiantes.filter(e =>
+    e.riesgo === 'ROJO' || e.riesgo === 'ROJO_FALTAS' || e.riesgo === 'AMBAR'
+  ).length || null
 
-export default function Sidebar({ view, onNav, onLogout }) {
+  const NAV = [
+    { key:'dashboard',  icon:'ti-layout-dashboard', label:'Panel general',     badge:null,          badgeBg:'' },
+    { key:'estudiantes',icon:'ti-users',             label:'Mis estudiantes',   badge:totalEst,      badgeBg:'#E85D04' },
+    { key:'alertas',    icon:'ti-alert-triangle',    label:'Alertas de riesgo', badge:totalAlertas,  badgeBg:'#DC2626' },
+  ]
   return (
     <aside style={{
       width:'220px', flexShrink:0, background:'#1A1A2E', color:'#E8E8F0',
