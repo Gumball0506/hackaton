@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { calcKPIs } from './lib/queries'
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://etutor-api.mystic-byte.com'
 
 const PER_PAGE = 10
 
